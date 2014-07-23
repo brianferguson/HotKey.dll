@@ -27,12 +27,12 @@ Here are some of the features of the HotKey plugin:
 * Hotkeys can be a letter, number, or the [pre-defined keywords](#pre-defined-hotkey-keywords). You can represent any keyboard key by using its number equivilant (in either hex, octal, binary or base 10). See the list [here](http://msdn.microsoft.com/en-us/library/windows/desktop/dd375731%28v=vs.85%29.aspx). Example: `HotKey=Shift 0x41` which translates to "SHIFT A"
 
 #####Notes:
-* If `SHIFT`/`CTRL`/`ALT` is used with its L/R variations, the L/R will be ignored.
+* If `SHIFT`/`CTRL`/`ALT` is used with its L/R variations, the L/R variations will be ignored.
 * There are only 3 special toggle cases: `CapsLock Status`, `ScrollLock Status`, and `NumLock Status`. The [number value](http://docs.rainmeter.net/manual-beta/measures#Values) of the plugin will be `1` when the toggle key is in the "on" state, and `0` when in the "off" state.
 * The [number value](http://docs.rainmeter.net/manual-beta/measures#Values) of the plugin will always be `0` except in the special toggle cases.
 * The `Fn` on some laptop keyboards cannot be detected.
 * The mouse button's will not work by themselves, they require another non-mouse key to be used in combination with the mouse button.
-* On some keyboards, when NumLock is off, the keys will represent other keys (usually the navigation keys, like "Home").
+* On some keyboards, when NumLock is off, the Numeric Keypad keys will represent other keys (usually the navigation keys, like "Home").
 * On some keyboards, when `SHIFT` is used with a Numeric Keypad key, the HotKey may not work. Example: `HotKey=Shift Num6` will not work because the plugin thinks the SHIFT and Numpad 6 need to be pressed, while the system thinks you pressed the Right Arrow key.
 * There may be cases where an elvated process will "block" the plugin from seeing a key being pressed.
 * Due to the plugin needing to compare which keys were pressed vs. which keys trigger an action, there is a slight chance that some hot keys will not be detected correctly when typing really fast or having a large amount of HotKey measures.
