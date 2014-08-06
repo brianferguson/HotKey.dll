@@ -12,6 +12,7 @@ Contents
 * [Features](#features)
 * [Options](#options)
 * [Pre-defined HotKey Keywords](#pre-defined-hotkey-keywords)
+* [Commands](#commands)
 * [Changes](#changes)
 * [Download](#download)
 * [Build Instructions](#build-instructions)
@@ -53,6 +54,13 @@ Pre-defined HotKey Keywords
 * **Navigation/Arrows** - `PAGEUP`, `PAGEDOWN`, `END`, `HOME`, `LEFT`, `UP`, `RIGHT`, `DOWN`, `INSERT`, `DELETE`, `PAUSE`(Break), `PRINTSCREEN`(Sys Req.)
 * **F Keys** - `F1`, `F2`, ... `F24`
 * **Keyboard** - `BACKSPACE`, `TAB`, `ENTER`(Return), `CAPSLOCK`, `NUMLOCK`, `SCROLLLOCK`, `ESCAPE`, `SPACE`, `LWIN`, `RWIN`, `MENU`(next to Windows key), `SHIFT`, `LSHIFT`, `RSHIFT`, `CTRL`, `LCTRL`, `RCTRL`, `ALT`, `LALT`, `RALT`, `COLON`(;:), `PLUS`(=+), `MINUS`(-_), `COMMA`(,<), `PERIOD`(.>), `FORWARDSLASH`(/?), `BACKSLASH`(\|), `BACKTICK`(&#x60;~), `LBRACKET`([{), `RBRACKET`(]}), `QUOTE`('")
+
+
+Commands
+-
+* **Stop** - Stops the plugin from executing any actions. This is similar to disabling the measure.  **Example:** `!CommandMeasure MeasureName Stop`
+* **Start** - Tells the plugin to go ahead and perform the actions.  **Example:** `!CommandMeasure MeasureName Start`
+* **Toggle** - Starts the plugin if stopped, or stops the plugin if already started.  **Example:** `!CommandMeasure MeasureName Toggle`
 
 
 Changes
