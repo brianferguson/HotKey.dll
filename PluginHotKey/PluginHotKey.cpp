@@ -216,7 +216,7 @@ void RemoveMeasure(Measure* measure, const bool isUp, const bool isDown)
 
 	if (g_IsHookActive && g_UpMeasures.empty() && g_DownMeasures.empty())
 	{
-		while (g_Hook && UnhookWindowsHookEx(g_Hook))
+		while (g_Hook && UnhookWindowsHookEx(g_Hook) == FALSE)
 		{
 			RmLogF(measure->rm, LOG_ERROR, g_ErrHook, L"stop");
 		}

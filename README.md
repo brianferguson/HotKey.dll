@@ -68,6 +68,7 @@ Changes
 Here is a list of the major changes to the plugin.
 
 #####Version:
+* **0.0.1.6** - Fixed minor bug when releasing hook.
 * **0.0.1.5** - 75% re-write of plugin. Deprecated "Action", please use "KeyDownAction" or "KeyUpAction" or both.
 * **0.0.0.1** - Initial Beta Version.
 
