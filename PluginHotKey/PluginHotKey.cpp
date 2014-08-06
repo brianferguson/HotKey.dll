@@ -18,18 +18,20 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include "PluginHotKey.h"
 
-static std::vector<Measure*> g_Measures;
-HINSTANCE g_Instance = nullptr;
-HHOOK g_Hook;
+static std::vector<Measure*> g_UpMeasures;
+static std::vector<Measure*> g_DownMeasures;
+static HINSTANCE g_Instance = nullptr;
+static HHOOK g_Hook = nullptr;
+static bool g_IsHookActive = false;
 
-void RemoveMeasure(Measure* measure);
+void RemoveMeasure(Measure* measure, const bool isUp = true, const bool isDown = true);
 void ParseKeys(Measure* measure);
 LRESULT CALLBACK LLKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
-void RemoveVariations(std::vector<short>& keys, const bool hasShift, const bool hasCTRL, const bool hasALT);
 
 LPCWSTR g_ErrRange = L"Invalid HotKey: %s";
 LPCWSTR g_ErrEmpty = L"Missing \"Keys\" option.";
-LPCWSTR g_ErrHook =  L"Could not start the keyboard hook.";
+LPCWSTR g_ErrHook = L"Could not %s the keyboard hook.";
+LPCWSTR g_ErrCommand = L"Invalid command: %s";
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
@@ -59,8 +61,6 @@ PLUGIN_EXPORT void Reload(void* data, void* rm, double* maxValue)
 {
 	Measure* measure = (Measure*)data;
 
-	measure->action = RmReadString(rm, L"Action", L"");
-
 	std::wstring keys = RmReadString(rm, L"HotKey", L"");
 	if (keys.empty())
 	{
@@ -69,12 +69,15 @@ PLUGIN_EXPORT void Reload(void* data, void* rm, double* maxValue)
 		return;
 	}
 
-	// Test whether if keys has changed (or first run)
+	measure->upAction = RmReadString(rm, L"KeyUpAction", L"", FALSE);
+	measure->downAction = RmReadString(rm, L"KeyDownAction", L"", FALSE);
+	measure->showAllKeys = RmReadInt(rm, L"ShowAllKeys", 0) != 0;
+
+	// Only update if the "HotKey" option was changed
 	if (keys != measure->keys)
 	{
 		measure->keys = keys;
 		measure->virtualKeys.clear();
-		measure->hasShift = measure->hasCTRL = measure->hasALT = false;
 
 		short status = 0;
 		if (_wcsicmp(keys.c_str(), L"CAPSLOCK STATUS") == 0)
@@ -100,9 +103,9 @@ PLUGIN_EXPORT void Reload(void* data, void* rm, double* maxValue)
 		if (measure->hasToggle)
 		{
 			measure->toggle = LOWORD(GetKeyState(status)) ? true : false;
-			if (!measure->action.empty())
+			if (!measure->downAction.empty())
 			{
-				RmExecute(measure->skin, measure->action.c_str());
+				RmExecute(measure->skin, measure->downAction.c_str());
 			}
 
 			measure->virtualKeys.push_back(status);
@@ -112,18 +115,48 @@ PLUGIN_EXPORT void Reload(void* data, void* rm, double* maxValue)
 			ParseKeys(measure);
 		}
 
-		if (std::find(g_Measures.begin(), g_Measures.end(), measure) == g_Measures.end())
+		// If there is an "Up" action, push the measure to the global "Up" list (if it doesn't exist).
+		// Else if there isn't an "Up" action AND the measure is in the global list, remove it.
+		if (std::find(g_UpMeasures.begin(), g_UpMeasures.end(), measure) == g_UpMeasures.end())
 		{
-			g_Measures.push_back(measure);
-
-			// Start the keyboard hook
-			if (g_Measures.size() == 1)
+			if (!measure->upAction.empty())
 			{
-				if (!(g_Hook = SetWindowsHookEx(WH_KEYBOARD_LL, LLKeyboardProc, NULL, 0)))
-				{
-					RmLog(rm, LOG_WARNING, g_ErrHook);
-					RemoveMeasure(measure);
-				}
+				g_UpMeasures.push_back(measure);
+			}
+		}
+		else if (measure->upAction.empty())
+		{
+			RemoveMeasure(measure, true, false);
+		}
+
+		// Add measure to global "Down" list (if it doesn't exist). Also add any "Toggle" measures to
+		// make sure they are updated.
+		if (std::find(g_DownMeasures.begin(), g_DownMeasures.end(), measure) == g_DownMeasures.end())
+		{
+			if (!measure->downAction.empty() || measure->hasToggle || measure->showAllKeys)
+			{
+				g_DownMeasures.push_back(measure);
+			}
+		}
+		else if (measure->downAction.empty())
+		{
+			RemoveMeasure(measure, false, true);
+		}
+
+		// Start the keyboard hook
+		if (!g_IsHookActive &&
+			((!measure->upAction.empty() || !measure->downAction.empty() || measure->hasToggle || measure->showAllKeys) &&
+			(g_UpMeasures.size() + g_DownMeasures.size()) >= 1))
+		{
+			g_Hook = SetWindowsHookEx(WH_KEYBOARD_LL, LLKeyboardProc, NULL, 0);
+			if (g_Hook)
+			{
+				g_IsHookActive = true;
+			}
+			else
+			{
+				RmLogF(rm, LOG_ERROR, g_ErrHook, L"start");
+				RemoveMeasure(measure);
 			}
 		}
 	}
@@ -142,22 +175,61 @@ PLUGIN_EXPORT void Finalize(void* data)
 	delete measure;
 }
 
-void RemoveMeasure(Measure* measure)
+PLUGIN_EXPORT void ExecuteBang(void* data, LPCWSTR args)
 {
-	std::vector<Measure*>::iterator found = std::find(g_Measures.begin(), g_Measures.end(), measure);
-	if (found != g_Measures.end())
-	{
-		g_Measures.erase(found);
-	}
+	Measure* measure = (Measure*)data;
 
-	if (g_Measures.empty())
+	if (_wcsicmp(args, L"Start") == 0)
 	{
-		UnhookWindowsHookEx(g_Hook);
+		measure->isActive = true;
+	}
+	else if (_wcsicmp(args, L"Stop") == 0)
+	{
+		measure->isActive = false;
+	}
+	else if (_wcsicmp(args, L"Toggle") == 0)
+	{
+		measure->isActive = !measure->isActive;
+	}
+	else
+	{
+		RmLogF(measure->rm, LOG_WARNING, g_ErrCommand, args);
+	}
+}
+
+void RemoveMeasure(Measure* measure, const bool isUp, const bool isDown)
+{
+	auto remove = [&](const bool& state, std::vector<Measure*>& gMeasures) -> void
+	{
+		if (state)
+		{
+			std::vector<Measure*>::iterator found = std::find(gMeasures.begin(), gMeasures.end(), measure);
+			if (found != gMeasures.end())
+			{
+				gMeasures.erase(found);
+			}
+		}
+	};
+
+	remove(isUp, g_UpMeasures);
+	remove(isDown, g_DownMeasures);
+
+	if (g_IsHookActive && g_UpMeasures.empty() && g_DownMeasures.empty())
+	{
+		while (g_Hook && UnhookWindowsHookEx(g_Hook))
+		{
+			RmLogF(measure->rm, LOG_ERROR, g_ErrHook, L"stop");
+		}
+
+		g_Hook = nullptr;
+		g_IsHookActive = false;
 	}
 }
 
 void ParseKeys(Measure* measure)
 {
+	bool hasAlt = false, hasCtrl = false, hasShift = false;
+
 	std::vector<std::wstring> tokens = Tokenize(measure->keys);
 	for (auto& key : tokens)
 	{
@@ -212,7 +284,7 @@ void ParseKeys(Measure* measure)
 		}
 
 		// Check range, should be between VK_LBUTTON(0x01, 1) and VK_OEM_CLEAR(0xFE, 254)
-		//	per http://msdn.microsoft.com/en-us/library/windows/desktop/dd375731(v=vs.85).aspx
+		// per http://msdn.microsoft.com/en-us/library/windows/desktop/dd375731(v=vs.85).aspx
 		if (number < VK_LBUTTON || number > VK_OEM_CLEAR)
 		{
 			RmLogF(measure->rm, LOG_ERROR, g_ErrRange, key.c_str());
@@ -222,89 +294,121 @@ void ParseKeys(Measure* measure)
 
 		measure->virtualKeys.push_back((short)number);
 
-		// When L/R control keys are used, the system also sends the generic control key as well
-		if (number == VK_LSHIFT || number == VK_RSHIFT) measure->virtualKeys.push_back(VK_SHIFT);
-		else if (number == VK_LCONTROL || number == VK_RCONTROL) measure->virtualKeys.push_back(VK_CONTROL);
-		else if (number == VK_LMENU || number == VK_RMENU) measure->virtualKeys.push_back(VK_MENU);
-		else if (number == VK_SHIFT) measure->hasShift = true;
-		else if (number == VK_CONTROL) measure->hasCTRL = true;
-		else if (number == VK_MENU) measure->hasALT = true;
+		if (number == VK_SHIFT) hasShift = true;
+		else if (number == VK_CONTROL) hasCtrl = true;
+		else if (number == VK_MENU) hasAlt = true;
 	}
 
-	// Sort, remove duplicates, and remove L and R variations (if needed)
+	// Sort lowest to highest
 	std::sort(measure->virtualKeys.begin(), measure->virtualKeys.end());
+
+	// Remove duplicates
 	measure->virtualKeys.erase(std::unique(measure->virtualKeys.begin(), measure->virtualKeys.end()), measure->virtualKeys.end());
-	RemoveVariations(measure->virtualKeys, measure->hasShift, measure->hasCTRL, measure->hasALT);
+
+	// Remove any L/R variations (only if the HotKey has the generic modifier)
+	// ie. SHIFT overrides LSHIFT
+	auto remove = [&](const bool modifier, const short key) -> void
+	{
+		if (modifier)
+		{
+			measure->virtualKeys.erase(
+				std::remove(measure->virtualKeys.begin(), measure->virtualKeys.end(), key),
+				measure->virtualKeys.end());
+		}
+	};
+
+	remove(hasShift, VK_LSHIFT);
+	remove(hasShift, VK_RSHIFT);
+	remove(hasCtrl, VK_LCONTROL);
+	remove(hasCtrl, VK_RCONTROL);
+	remove(hasAlt, VK_LMENU);
+	remove(hasAlt, VK_RMENU);
+
+	measure->virtualKeys.shrink_to_fit();
 }
 
 LRESULT CALLBACK LLKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
 	if (nCode >= 0)
 	{
-		switch (wParam)
-		{
-			case WM_SYSKEYUP:
-			case WM_KEYUP:
-			{
-				std::vector<short> current;
-				bool hasToggle = false;
-				short keyCode = 0;
-				for (short i = 0; i < 256; ++i)
-				{
-					if (GetAsyncKeyState(i) & 0x8000)
-					{
-						current.push_back(i);
+		KBDLLHOOKSTRUCT* kbdStruct = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
 
-						// In case of the measure is a toggle key
-						if (i == VK_CAPITAL || i == VK_SCROLL || i == VK_NUMLOCK)
+		auto doAction = [&](const bool isUpMeasure) -> void
+		{
+			for (auto& measure : (isUpMeasure ? g_UpMeasures : g_DownMeasures))
+			{
+				// Log keystoke if needed
+				if (measure->showAllKeys)
+				{
+					WCHAR text[32];
+					DWORD dwCode = MapVirtualKey(kbdStruct->vkCode, 0) << 16;
+					if (GetKeyNameText(dwCode, text, sizeof(text) / sizeof(WCHAR)) == 0)
+					{
+						dwCode |= (1 << 24);
+						if (GetKeyNameText(dwCode, text, sizeof(text) / sizeof(WCHAR)) == 0)
 						{
-							hasToggle = true;
-							keyCode = i;
+							wcsncpy_s(text, L"Unknown Key", 32);
 						}
 					}
+					RmLogF(measure->rm, LOG_NOTICE, L"Key: %s, Hex: 0x%X (%i), Scan Code: 0x%X (%i), State: %s, Time: %i",
+						text, kbdStruct->vkCode, kbdStruct->vkCode, kbdStruct->scanCode, kbdStruct->scanCode,
+						isUpMeasure ? L"Up" : L"Down", kbdStruct->time);
 				}
 
-				for (auto& measure : g_Measures)
+				// Only execute if the measure is active
+				if (measure->isActive)
 				{
-					std::vector<short> temp = current;
-					RemoveVariations(temp, measure->hasShift, measure->hasCTRL, measure->hasALT);
-
-					// Compare all the keys, or just the toggle keys
-					if (temp == measure->virtualKeys ||
-						(hasToggle && measure->hasToggle && keyCode == measure->virtualKeys[0]))
+					if (std::find(measure->virtualKeys.begin(), measure->virtualKeys.end(), (short)kbdStruct->vkCode) != measure->virtualKeys.end())
 					{
-						if (measure->hasToggle)
+						bool executeAction = true;
+						for (const auto& key : measure->virtualKeys)
 						{
-							measure->toggle = !measure->toggle;
+							if (key != (short)kbdStruct->vkCode && (!(GetAsyncKeyState(key) & 0x8000)))
+							{
+								executeAction = false;
+								break;
+							}
 						}
 
-						if (!measure->action.empty())
+						// Handle toggle keys.
+						// MSDN states that the low-order bit of the return value of GetKeyState will indicate
+						// if the toggle is "on" or not, however after some testing, it seems it more complicated
+						// when the toggle key is held down, in which the low-order bit seems to be reversed.
+						// Instead of testing the low-order bit, just test for 0 and -127. This may need to be
+						// updated in the future.
+						if (measure->hasToggle)
 						{
-							RmExecute(measure->skin, measure->action.c_str());
+							const short state = GetKeyState(measure->virtualKeys[0]);
+							measure->toggle = state == 0 || state == -127 ? true : false;
+
+						}
+
+						// Since toggle keys are added to the "Down" measures no matter what,
+						// make sure there is a down "Action" before executing.
+						if (executeAction && !measure->downAction.empty())
+						{
+							RmExecute(measure->skin, isUpMeasure ?
+								measure->upAction.c_str() :
+								measure->downAction.c_str());
 						}
 					}
 				}
 			}
+		};
+
+		switch (wParam)
+		{
+		case WM_SYSKEYUP:
+		case WM_KEYUP:
+			doAction(true);
+			break;
+
+		case WM_SYSKEYDOWN:
+		case WM_KEYDOWN:
+			doAction(false);
 			break;
 		}
 	}
 
 	return CallNextHookEx(g_Hook, nCode, wParam, lParam);
-}
-
-inline void RemoveVariations(std::vector<short>& keys, const bool hasShift, const bool hasCTRL, const bool hasALT)
-{
-	auto remove = [&](const bool modifier, const short key) -> void
-	{
-		if (modifier) keys.erase(std::remove(keys.begin(), keys.end(), key), keys.end());
-	};
-
-	remove(hasShift, VK_LSHIFT);
-	remove(hasShift, VK_RSHIFT);
-	remove(hasCTRL, VK_LCONTROL);
-	remove(hasCTRL, VK_RCONTROL);
-	remove(hasALT, VK_LMENU);
-	remove(hasALT, VK_RMENU);
-
-	keys.shrink_to_fit();
 }

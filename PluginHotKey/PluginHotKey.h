@@ -120,29 +120,29 @@ const KeyInfo g_VirtualKeys[] =
 
 struct Measure
 {
-	std::wstring action;
+	std::wstring upAction;
+	std::wstring downAction;
 	std::wstring keys;
+	bool showAllKeys;
 
 	std::vector<short> virtualKeys;
 
 	bool toggle;							// Toggle key state
 	bool hasToggle;							// Key is either CapsLock, NumLock, or ScrollLock
-	bool hasShift;							// Keys contain SHIFT, but not LSHIFT or RSHIFT
-	bool hasCTRL;							// Keys contain CTRL, but not LCTRL or RCTRL
-	bool hasALT;							// Keys contain ALT, but not LALT or RALT
+	bool isActive;
 
 	void* skin;
 	void* rm;
 
 	Measure() :
-		action(),
+		upAction(),
+		downAction(),
 		keys(),
+		showAllKeys(false),
 		virtualKeys(),
 		toggle(false),
 		hasToggle(false),
-		hasShift(false),
-		hasCTRL(false),
-		hasALT(false),
+		isActive(true),
 		skin(),
 		rm()
 	{ }

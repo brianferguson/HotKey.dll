@@ -1,7 +1,7 @@
 HotKey.dll
 =============
 
-HotKey.dll is a plugin for [Rainmeter](http://www.rainmeter.net) that will run an [Action](#options) when a key (or combination of keys) are pressed and released. The plugin can also determine the "state" of 3 toggle keys (Caps Lock, Scroll Lock, and Num Lock).
+HotKey.dll is a plugin for [Rainmeter](http://www.rainmeter.net) that will run an [Action](#options) when a key is pressed and/or released. The plugin can also determine the "state" of 3 toggle keys (Caps Lock, Scroll Lock, and Num Lock).
 
 #####Note:
 This plugin requires Rainmeter version 3.0.2 (r2161) or higher. Make sure to set the "Minimum Rainmeter Version" to `3.0.2.2161` in the [Skin Packager](http://docs.rainmeter.net/manual/publishing-skins).
@@ -22,9 +22,10 @@ Features
 -
 Here are some of the features of the HotKey plugin:
 
-* Performs an [action](http://docs.rainmeter.net/manual-beta/skins/option-types#Action) once the hot key is pressed and released.
-* Can get the status (on or off) of the 3 toggle keys (Caps Lock, Scroll Lock, Num Lock). The [number value](http://docs.rainmeter.net/manual-beta/measures#Values) of the plugin will be `1` when the toggle key is in the "on" state, and `0` when in the "off" state. To use the special toggle cases, add the word "Status" after the key. Example: `HotKey=CapsLock Status`. 
+* Performs an [action](http://docs.rainmeter.net/manual-beta/skins/option-types#Action) once the hot key is pressed and/or released.
+* Can get the status (on or off) of the 3 toggle keys (Caps Lock, Scroll Lock, Num Lock). The [number value](http://docs.rainmeter.net/manual-beta/measures#Values) of the plugin will be `1` when the toggle key is in the "on" state, and `0` when in the "off" state. To use the special toggle cases, add the word "Status" after the key. Example: `HotKey=CapsLock Status`. Note: The toggle changes when the key is in the "down" state even if there are no KeyDownAction.
 * Hotkeys can be a letter, number, or the [pre-defined keywords](#pre-defined-hotkey-keywords). You can represent any keyboard key by using its number equivilant (in either hex, octal, binary or base 10). See the list [here](http://msdn.microsoft.com/en-us/library/windows/desktop/dd375731%28v=vs.85%29.aspx). Example: `HotKey=Shift 0x41` which translates to "SHIFT A"
+* The plugin can also push all keystrokes to the Rainmeter log to help users determine the correct hex code to use in the `HotKey` option.
 
 #####Notes:
 * If `SHIFT`/`CTRL`/`ALT` is used with its L/R variations, the L/R variations will be ignored.
@@ -35,13 +36,14 @@ Here are some of the features of the HotKey plugin:
 * On some keyboards, when NumLock is off, the Numeric Keypad keys will represent other keys (usually the navigation keys, like "Home").
 * On some keyboards, when `SHIFT` is used with a Numeric Keypad key, the HotKey may not work. Example: `HotKey=Shift Num6` will not work because the plugin thinks the SHIFT and Numpad 6 need to be pressed, while the system thinks you pressed the Right Arrow key.
 * There may be cases where an elvated process will "block" the plugin from seeing a key being pressed.
-* Due to the plugin needing to compare which keys were pressed vs. which keys trigger an action, there is a slight chance that some hot keys will not be detected correctly when typing really fast or having a large amount of HotKey measures.
 
 
 Options
 -
-* **HotKey** - Key or combination of keys (separated by a space) needed to be pressed and release to run the Action.
-* **Action** - Action to be taken when the right HotKey has been pressed and released.
+* **HotKey** (Required) - Key or combination of keys (separated by a space) needed to be pressed and release to run the Action.
+* **KeyDownAction** (Optional) - Action to be taken when the right HotKey is in the "down" position. Holding the key down can result in repeated actions.
+* **KeyUpAction** (Optional) - Action to be taken when the right HotKey has been released. In some cases, keys will need to be released in the reverse order they were pressed.
+* **ShowAllKeys** (Optional) - When `1` will send all key strokes to the [Rainmeter log](http://docs.rainmeter.net/manual-beta/user-interface/about#LogTab). This will help users with deciphering each key's *hex code* (especially for foreign keyboards). The plugin will "attempt" to decipher what key was pressed, but there are some instances when it is wrong. For example, pressing the "Page Up" key will result in a "Num 9" in some cases. ShowAllKeys will always fire when the key is down (and also when the key is up if there is an KeyUpAction).
 
 
 Pre-defined HotKey Keywords
@@ -50,7 +52,7 @@ Pre-defined HotKey Keywords
 * **Numeric Keypad** - `NUM0`, `NUM1`, `NUM2`, `NUM3`, `NUM4`, `NUM5`, `NUM6`, `NUM7`, `NUM8`, `NUM9`, `MULT`, `ADD`, `SUBTRACT`, `DECIMAL`, `DIVIDE`
 * **Navigation/Arrows** - `PAGEUP`, `PAGEDOWN`, `END`, `HOME`, `LEFT`, `UP`, `RIGHT`, `DOWN`, `INSERT`, `DELETE`, `PAUSE`(Break), `PRINTSCREEN`(Sys Req.)
 * **F Keys** - `F1`, `F2`, ... `F24`
-* **Keyboard** - `BACKSPACE`, `TAB`, `ENTER`(Return), `CAPSLOCK`, `NUMLOCK`, `SCROLLLOCK`, `ESCAPE`, `SPACE`, `LWIN`, `RWIN`, `MENU`(next to Windows key), `SHIFT`, `LSHIFT`, `RSHIFT`, `CTRL`, `LCTRL`, `RCTRL`, `ALT`, `LALT`, `RALT`, `COLON`(;:), `PLUS`(=+), `MINUS`(-_), `COMMA`(,<), `PERIOD`(.>), `FORWARDSLASH`(/?), `BACKSLASH`(\|), `BACKTICK`((&#x60;~), `LBRACKET`([{), `RBRACKET`(]}), `QUOTE`('")
+* **Keyboard** - `BACKSPACE`, `TAB`, `ENTER`(Return), `CAPSLOCK`, `NUMLOCK`, `SCROLLLOCK`, `ESCAPE`, `SPACE`, `LWIN`, `RWIN`, `MENU`(next to Windows key), `SHIFT`, `LSHIFT`, `RSHIFT`, `CTRL`, `LCTRL`, `RCTRL`, `ALT`, `LALT`, `RALT`, `COLON`(;:), `PLUS`(=+), `MINUS`(-_), `COMMA`(,<), `PERIOD`(.>), `FORWARDSLASH`(/?), `BACKSLASH`(\|), `BACKTICK`(&#x60;~), `LBRACKET`([{), `RBRACKET`(]}), `QUOTE`('")
 
 
 Changes
@@ -58,6 +60,7 @@ Changes
 Here is a list of the major changes to the plugin.
 
 #####Version:
+* **0.0.1.5** - 75% re-write of plugin. Deprecated "Action", please use "KeyDownAction" or "KeyUpAction" or both.
 * **0.0.0.1** - Initial Beta Version.
 
 
@@ -85,7 +88,7 @@ Examples
 -
 
 ####Example 1:
-The status of the 3 toggle keys are at the top of the skin. To change the background color, press and release the hot keys.
+The status of the 3 toggle keys are at the top of the skin. To change the background color, press and release the hot keys. Once pressed, the background color should change. Once released, the background color should return to the original color.
 
 ```ini
 [Rainmeter]
@@ -107,7 +110,7 @@ Key5=MBUTTON SCROLLLOCK
 Measure=Plugin
 Plugin=HotKey
 HotKey=CapsLock Status
-Action=!UpdateMeasure CapsLock
+KeyDownAction=!UpdateMeasure CapsLock
 IfCondition=CapsLock = 1
 IfTrueAction=[!SetOption CapsMeter FontColor "255,0,0,255"][!UpdateMeter CapsMeter][!Redraw]
 IfFalseAction=[!SetOption CapsMeter FontColor "255,255,255,255"][!UpdateMeter CapsMeter][!Redraw]
@@ -116,7 +119,7 @@ IfFalseAction=[!SetOption CapsMeter FontColor "255,255,255,255"][!UpdateMeter Ca
 Measure=Plugin
 Plugin=HotKey
 HotKey=ScrollLock Status
-Action=!UpdateMeasure ScrollLock
+KeyDownAction=!UpdateMeasure ScrollLock
 IfCondition=ScrollLock = 1
 IfTrueAction=[!SetOption ScrollMeter FontColor "255,0,0,255"][!UpdateMeter ScrollMeter][!Redraw]
 IfFalseAction=[!SetOption ScrollMeter FontColor "255,255,255,255"][!UpdateMeter ScrollMeter][!Redraw]
@@ -125,7 +128,7 @@ IfFalseAction=[!SetOption ScrollMeter FontColor "255,255,255,255"][!UpdateMeter 
 Measure=Plugin
 Plugin=HotKey
 HotKey=Numlock Status
-Action=!UpdateMeasure NumLock
+KeyDownAction=!UpdateMeasure NumLock
 IfCondition=NumLock = 1
 IfTrueAction=[!SetOption NumMeter FontColor "255,0,0,255"][!UpdateMeter NumMeter][!Redraw]
 IfFalseAction=[!SetOption NumMeter FontColor "255,255,255,255"][!UpdateMeter NumMeter][!Redraw]
@@ -134,31 +137,36 @@ IfFalseAction=[!SetOption NumMeter FontColor "255,255,255,255"][!UpdateMeter Num
 Measure=Plugin
 Plugin=HotKey
 HotKey=#Key1#
-Action=[!SetOption Background SolidColor "255,0,0,255"][!UpdateMeter Background][!Redraw]
+KeyDownAction=[!SetOption Background SolidColor "255,0,0,255"][!UpdateMeter Background][!Redraw]
+KeyUpAction=[!SetOption Background SolidColor "#BackgroundColor#"][!UpdateMeter Background][!Redraw]
 
 [Green]
 Measure=Plugin
 Plugin=HotKey
 HotKey=#Key2#
-Action=[!SetOption Background SolidColor "0,255,0,255"][!UpdateMeter Background][!Redraw]
+KeyDownAction=[!SetOption Background SolidColor "0,255,0,255"][!UpdateMeter Background][!Redraw]
+KeyUpAction=[!SetOption Background SolidColor "#BackgroundColor#"][!UpdateMeter Background][!Redraw]
 
 [Blue]
 Measure=Plugin
 Plugin=HotKey
 HotKey=#Key3#
-Action=[!SetOption Background SolidColor "0,0,255,255"][!UpdateMeter Background][!Redraw]
+KeyDownAction=[!SetOption Background SolidColor "0,0,255,255"][!UpdateMeter Background][!Redraw]
+KeyUpAction=[!SetOption Background SolidColor "#BackgroundColor#"][!UpdateMeter Background][!Redraw]
 
 [Black]
 Measure=Plugin
 Plugin=HotKey
 HotKey=#Key4#
-Action=[!SetOption Background SolidColor "0,0,0,255"][!UpdateMeter Background][!Redraw]
+KeyDownAction=[!SetOption Background SolidColor "0,0,0,255"][!UpdateMeter Background][!Redraw]
+KeyUpAction=[!SetOption Background SolidColor "#BackgroundColor#"][!UpdateMeter Background][!Redraw]
 
-[Reset]
+[White]
 Measure=Plugin
 Plugin=HotKey
 HotKey=#Key5#
-Action=[!SetOption Background SolidColor "#BackgroundColor#"][!UpdateMeter Background][!Redraw]
+KeyDownAction=[!SetOption Background SolidColor "255,255,255,255"][!UpdateMeter Background][!Redraw]
+KeyUpAction=[!SetOption Background SolidColor "#BackgroundColor#"][!UpdateMeter Background][!Redraw]
 
 [Style]
 FontColor=255,255,255,255
@@ -220,4 +228,30 @@ Text=Black: #Key4#
 Meter=String
 MeterStyle=Style | Style1
 Text=Reset: #Key5#
+```
+
+####Example 2:
+This skin shows how to use the `ShowAllKeys` option.
+
+```ini
+[Rainmeter]
+Update=1000
+OnRefreshAction=!About Log
+AccurateText=1
+
+; Note: You still need a "HotKey" to use the ShowAllKeys option.
+; Uncomment the "KeyUpAction" to also log when the key has been released.
+[ShowAllKeys]
+Measure=Plugin
+Plugin=HotKey
+HotKey=A
+ShowAllKeys=1
+;KeyUpAction=[!About Log]
+
+[Dummy]
+Meter=String
+SolidColor=0,0,0
+FontColor=255,255,255
+Padding=5,5,5,5
+Text=Check the Rainmeter log!
 ```
