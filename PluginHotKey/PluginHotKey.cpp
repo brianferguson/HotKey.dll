@@ -385,7 +385,7 @@ LRESULT CALLBACK LLKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 
 						// Since toggle keys are added to the "Down" measures no matter what,
 						// make sure there is a down "Action" before executing.
-						if (executeAction && !measure->downAction.empty())
+						if (executeAction && (isUpMeasure || !measure->downAction.empty()))
 						{
 							RmExecute(measure->skin, isUpMeasure ?
 								measure->upAction.c_str() :
