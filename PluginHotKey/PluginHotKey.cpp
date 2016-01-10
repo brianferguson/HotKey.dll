@@ -148,7 +148,7 @@ PLUGIN_EXPORT void Reload(void* data, void* rm, double* maxValue)
 			((!measure->upAction.empty() || !measure->downAction.empty() || measure->hasToggle || measure->showAllKeys) &&
 			(g_UpMeasures.size() + g_DownMeasures.size()) >= 1))
 		{
-			g_Hook = SetWindowsHookEx(WH_KEYBOARD_LL, LLKeyboardProc, NULL, 0);
+			g_Hook = SetWindowsHookEx(WH_KEYBOARD_LL, LLKeyboardProc, g_Instance, NULL);
 			if (g_Hook)
 			{
 				g_IsHookActive = true;

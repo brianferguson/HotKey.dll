@@ -68,6 +68,8 @@ Changes
 Here is a list of the major changes to the plugin.
 
 #####Version:
+* **1.0.0.12** - Fixed hook issues on Windows XP SP3
+* **1.0.0.11** - Updated to VS2015
 * **1.0.0.10** - Finished beta testing. Offical version released.
 * **1.0.0.9** - Fixed "KeyUpAction" not being executed in certain situations.
 * **0.0.1.8** - *Hopefully* fixed issue with certain antivirus programs flagging the plugin as malware.
@@ -91,9 +93,12 @@ Download
 
 Build Instructions
 -
-This plugin can be built using any version of Visual Studio 2013. If you don't already have VS2013, you can download the free "Visual Studio Express 2013 for Windows Desktop" version [here](http://www.visualstudio.com/downloads/download-visual-studio-vs).
+HotKey.dll can be built using any version of Visual Studio 2015. If you don't already have VS2015, you can download [Visual Studio Community 2015](https://www.visualstudio.com/en-us/downloads/download-visual-studio-vs.aspx) for free. When installing, be sure to select the following components:
 
-After Visual Studio has been installed and updated, open `HotKey.sln` at the root of the repository to build.
+* Programming Languages -> Visual C++ -> Common Tools for Visual C++ 2015
+* Programming Languages -> Visual C++ -> Windows XP Support for C++
+
+After Visual Studio has been installed and updated, open HotKey.sln at the root of the repository to build.
 
 
 Examples
